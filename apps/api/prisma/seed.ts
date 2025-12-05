@@ -1,373 +1,603 @@
-import { PrismaClient, UserRole, TicketStatus, TicketPriority, Channel, Language } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import { PrismaClient, UserRole, TicketStatus, TicketPriority, Channel, Language, CallDirection, CallStatus } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('  Seeding database...');
+  console.log('🌱 Starting seed...');
 
-  // Очистка существующих данных (в правильном порядке)
-  await prisma.ticketMessage.deleteMany();
-  await prisma.attachment.deleteMany();
-  await prisma.ticket.deleteMany();
-  await prisma.department.deleteMany();
-  await prisma.message.deleteMany();
-  await prisma.chat.deleteMany();
-  await prisma.verificationCode.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.user.deleteMany();
+  // Hash password once
+  const hashedPassword = await bcrypt.hash('password123', 10);
 
-  console.log('  Cleared existing data');
+  // ============ USERS ============
+  console.log('👤 Creating users...');
 
-  // Хэширование паролей
-  const passwordHash = await bcrypt.hash('password123', 10);
-
-  // Создание системного пользователя для AI сообщений
-  const aiBot = await prisma.user.create({
-    data: {
-      email: 'ai-bot@qoldai.kz',
-      name: 'QoldAI Bot',
-      password: passwordHash,
-      role: UserRole.OPERATOR,
-      emailVerified: new Date(),
-    },
-  });
-
-  // Создание пользователей
-  const admin = await prisma.user.create({
-    data: {
-      email: 'admin@qoldai.kz',
-      name: 'Админ Системы',
-      password: passwordHash,
+  const admin = await prisma.user.upsert({
+    where: { email: 'admin@novitech.dev' },
+    update: {},
+    create: {
+      email: 'admin@novitech.dev',
+      password: hashedPassword,
+      name: 'Admin',
       role: UserRole.ADMIN,
-      emailVerified: new Date(),
     },
   });
 
-  const operator1 = await prisma.user.create({
-    data: {
-      email: 'operator@qoldai.kz',
-      name: 'Айдана Оператор',
-      password: passwordHash,
+  const maxOperator = await prisma.user.upsert({
+    where: { email: 'ceo@novitech.dev' },
+    update: {},
+    create: {
+      email: 'ceo@novitech.dev',
+      password: hashedPassword,
+      name: 'Максим Оператор',
       role: UserRole.OPERATOR,
-      emailVerified: new Date(),
     },
   });
 
-  const operator2 = await prisma.user.create({
-    data: {
-      email: 'support@qoldai.kz',
-      name: 'Арман Поддержка',
-      password: passwordHash,
+  const alisherOperator = await prisma.user.upsert({
+    where: { email: 'alisher@novitech.dev' },
+    update: {},
+    create: {
+      email: 'alisher@novitech.dev',
+      password: hashedPassword,
+      name: 'Алишер Оператор',
       role: UserRole.OPERATOR,
-      emailVerified: new Date(),
     },
   });
 
-  const client1 = await prisma.user.create({
-    data: {
-      email: 'client@example.com',
-      name: 'Нурлан Клиент',
-      password: passwordHash,
+  const maxClient = await prisma.user.upsert({
+    where: { email: 'max.client@novitech.dev' },
+    update: {},
+    create: {
+      email: 'max.client@novitech.dev',
+      password: hashedPassword,
+      name: 'Максим Добрый Клиент',
       role: UserRole.CLIENT,
-      emailVerified: new Date(),
     },
   });
 
-  const client2 = await prisma.user.create({
-    data: {
-      email: 'user@example.com',
-      name: 'Асель Пользователь',
-      password: passwordHash,
+  const alisherClient = await prisma.user.upsert({
+    where: { email: 'alisher.client@novitech.dev' },
+    update: {},
+    create: {
+      email: 'alisher.client@novitech.dev',
+      password: hashedPassword,
+      name: 'Алишер Злой Клиент',
       role: UserRole.CLIENT,
-      emailVerified: new Date(),
     },
   });
 
-  console.log('  Created users');
-
-  // Создание департаментов
-  const techSupport = await prisma.department.create({
-    data: {
-      name: 'Техническая поддержка',
-      description: 'Помощь с техническими вопросами и проблемами',
+  const aiBot = await prisma.user.upsert({
+    where: { email: 'ai@novitech.dev' },
+    update: {},
+    create: {
+      email: 'ai@novitech.dev',
+      password: hashedPassword,
+      name: 'QoldAI Bot',
+      role: UserRole.OPERATOR,
     },
   });
 
-  const billing = await prisma.department.create({
-    data: {
-      name: 'Биллинг и оплата',
-      description: 'Вопросы по счетам, оплате и подпискам',
+  console.log('✅ Users created');
+
+  // ============ DEPARTMENTS ============
+  console.log('🏢 Creating departments...');
+
+  const itSupport = await prisma.department.upsert({
+    where: { name: 'IT Support' },
+    update: {},
+    create: {
+      name: 'IT Support',
+      description: 'Technical support and IT issues',
+      operators: {
+        connect: [{ id: maxOperator.id }, { id: alisherOperator.id }, { id: aiBot.id }],
+      },
     },
   });
 
-  const general = await prisma.department.create({
-    data: {
-      name: 'Общие вопросы',
-      description: 'Общая информация и консультации',
+  const hr = await prisma.department.upsert({
+    where: { name: 'HR' },
+    update: {},
+    create: {
+      name: 'HR',
+      description: 'Human Resources',
+      operators: {
+        connect: [{ id: maxOperator.id }],
+      },
     },
   });
 
-  const sales = await prisma.department.create({
-    data: {
-      name: 'Продажи',
-      description: 'Информация о продуктах и услугах',
+  const general = await prisma.department.upsert({
+    where: { name: 'General' },
+    update: {},
+    create: {
+      name: 'General',
+      description: 'General inquiries',
+      operators: {
+        connect: [{ id: alisherOperator.id }],
+      },
     },
   });
 
-  console.log('  Created departments');
+  console.log('✅ Departments created');
 
-  // Создание тикетов
-  const ticket1 = await prisma.ticket.create({
-    data: {
-      subject: 'Не могу войти в аккаунт',
-      description: 'Не могу войти в свой аккаунт. Пишет "неверный пароль", хотя я уверен что ввожу правильно.',
-      clientId: client1.id,
-      operatorId: operator1.id,
-      departmentId: techSupport.id,
-      status: TicketStatus.IN_PROGRESS,
+  // ============ TICKETS (15 total) ============
+  console.log('🎫 Creating tickets...');
+
+  // Helper function to create ticket with messages
+  const createTicketWithMessages = async (ticketData: any, messages: Array<{ senderId: string; content: string; isAi?: boolean }>) => {
+    const ticket = await prisma.ticket.create({
+      data: ticketData,
+    });
+
+    for (const msg of messages) {
+      await prisma.ticketMessage.create({
+        data: {
+          ticketId: ticket.id,
+          senderId: msg.senderId,
+          content: msg.content,
+          isAiGenerated: msg.isAi || false,
+        },
+      });
+    }
+
+    return ticket;
+  };
+
+  // RUSSIAN TICKETS (5) - 2 positive, 3 negative
+  // 1. RU - Positive - RESOLVED
+  await createTicketWithMessages(
+    {
+      subject: 'Не работает VPN',
+      description: 'Здравствуйте! Не могу подключиться к корпоративному VPN. Помогите, пожалуйста.',
+      status: TicketStatus.RESOLVED,
       priority: TicketPriority.HIGH,
       channel: Channel.WEB,
       language: Language.RU,
-      aiCategory: 'Авторизация',
-      aiSentiment: 'negative',
-      aiSummary: 'Клиент не может войти в аккаунт, ошибка "неверный пароль" при правильных данных.',
-      messages: {
-        create: [
-          {
-            content: 'Здравствуйте! Я не могу войти в свой аккаунт. Пишет "неверный пароль", хотя я уверен что ввожу правильно. Помогите пожалуйста!',
-            senderId: client1.id,
-            isAiGenerated: false,
-          },
-          {
-            content: 'Здравствуйте! Я получил ваше обращение и уже работаю над решением. Ваша проблема связана с авторизацией - это частый вопрос, и я постараюсь помочь вам как можно быстрее. Пожалуйста, ожидайте ответа оператора.',
-            senderId: aiBot.id,
-            isAiGenerated: true,
-          },
-          {
-            content: 'Добрый день! Я проверил ваш аккаунт. Попробуйте сбросить пароль через форму восстановления. Если не поможет - напишите, я сброшу вручную.',
-            senderId: operator1.id,
-            isAiGenerated: false,
-          },
-        ],
-      },
+      clientId: maxClient.id,
+      operatorId: maxOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'VPN/Network',
+      aiSentiment: 'neutral',
+      aiSummary: 'Клиент не может подключиться к корпоративному VPN',
+      resolvedAt: new Date('2025-12-05T14:30:00'),
     },
-  });
+    [
+      { senderId: maxClient.id, content: 'Не могу подключиться к VPN уже час' },
+      { senderId: maxOperator.id, content: 'Здравствуйте! Проверьте, пожалуйста, правильность логина и пароля' },
+      { senderId: maxClient.id, content: 'Спасибо, все заработало!' },
+    ]
+  );
 
-  const ticket2 = await prisma.ticket.create({
-    data: {
-      subject: 'Вопрос по оплате подписки',
-      description: 'Хотела уточнить, какие способы оплаты вы принимаете? И есть ли скидки для студентов?',
-      clientId: client2.id,
-      departmentId: billing.id,
+  // 2. RU - Negative - OPEN
+  await createTicketWithMessages(
+    {
+      subject: 'СРОЧНО! Принтер не печатает!',
+      description: 'Это просто кошмар! Принтер не печатает уже третий день! Я не могу работать!',
+      status: TicketStatus.OPEN,
+      priority: TicketPriority.URGENT,
+      channel: Channel.EMAIL,
+      language: Language.RU,
+      clientId: alisherClient.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Hardware/Printer',
+      aiSentiment: 'negative',
+      aiSummary: 'Клиент крайне недоволен, принтер не работает третий день',
+      aiSuggestedReply: 'Приносим извинения за неудобства. Мы направим специалиста в течение часа для устранения проблемы.',
+    },
+    [
+      { senderId: alisherClient.id, content: 'Когда уже исправите?! Я жду уже три дня!' },
+      { senderId: aiBot.id, content: 'Приносим извинения. Специалист будет направлен в течение часа.', isAi: true },
+    ]
+  );
+
+  // 3. RU - Positive - CLOSED
+  await createTicketWithMessages(
+    {
+      subject: 'Восстановление пароля от почты',
+      description: 'Забыл пароль от корпоративной почты. Можете помочь восстановить?',
+      status: TicketStatus.CLOSED,
+      priority: TicketPriority.MEDIUM,
+      channel: Channel.WEB,
+      language: Language.RU,
+      clientId: maxClient.id,
+      operatorId: alisherOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Email/Password',
+      aiSentiment: 'positive',
+      aiSummary: 'Запрос на восстановление пароля от корпоративной почты',
+      resolvedAt: new Date('2025-12-04T10:20:00'),
+    },
+    [
+      { senderId: maxClient.id, content: 'Забыл пароль от почты' },
+      { senderId: alisherOperator.id, content: 'Отправил вам ссылку для сброса пароля на личный email' },
+      { senderId: maxClient.id, content: 'Получил, спасибо большое!' },
+    ]
+  );
+
+  // 4. RU - Negative - IN_PROGRESS
+  await createTicketWithMessages(
+    {
+      subject: 'Медленный интернет',
+      description: 'Интернет тормозит невыносимо! Невозможно работать! Сделайте что-нибудь!',
+      status: TicketStatus.IN_PROGRESS,
+      priority: TicketPriority.HIGH,
+      channel: Channel.PHONE,
+      language: Language.RU,
+      clientId: alisherClient.id,
+      operatorId: maxOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Network/Performance',
+      aiSentiment: 'negative',
+      aiSummary: 'Жалоба на низкую скорость интернет-соединения',
+    },
+    [
+      { senderId: alisherClient.id, content: 'Скорость ужасная! Что происходит?' },
+      { senderId: maxOperator.id, content: 'Проверяем сетевое оборудование, ожидайте' },
+    ]
+  );
+
+  // 5. RU - Negative - OPEN
+  await createTicketWithMessages(
+    {
+      subject: 'Не устанавливается программа',
+      description: 'Пытаюсь установить 1С, выдает ошибку. Уже все перепробовал!',
       status: TicketStatus.OPEN,
       priority: TicketPriority.MEDIUM,
       channel: Channel.WEB,
       language: Language.RU,
-      aiCategory: 'Оплата',
-      aiSentiment: 'neutral',
-      aiSummary: 'Клиент интересуется способами оплаты и наличием скидок.',
-      messages: {
-        create: [
-          {
-            content: 'Добрый день! Хотела уточнить, какие способы оплаты вы принимаете? И есть ли скидки для студентов?',
-            senderId: client2.id,
-            isAiGenerated: false,
-          },
-          {
-            content: 'Здравствуйте! Спасибо за обращение. Ваш вопрос касается оплаты - это важная тема, и я помогу разобраться. Оператор скоро предоставит подробную информацию о способах оплаты и скидках.',
-            senderId: aiBot.id,
-            isAiGenerated: true,
-          },
-        ],
-      },
-    },
-  });
-
-  const ticket3 = await prisma.ticket.create({
-    data: {
-      subject: 'Приложение вылетает при запуске',
-      description: 'СРОЧНО! Приложение падает сразу после запуска! Ничего не могу сделать, работа стоит!',
-      clientId: client1.id,
-      operatorId: operator2.id,
-      departmentId: techSupport.id,
-      status: TicketStatus.RESOLVED,
-      priority: TicketPriority.URGENT,
-      channel: Channel.WEB,
-      language: Language.RU,
-      aiCategory: 'Баг',
+      clientId: alisherClient.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Software/Installation',
       aiSentiment: 'negative',
-      aiSummary: 'Критическая проблема - приложение крашится. Решено обновлением версии.',
-      resolvedAt: new Date(),
-      messages: {
-        create: [
-          {
-            content: 'СРОЧНО! Приложение падает сразу после запуска! Ничего не могу сделать, работа стоит!',
-            senderId: client1.id,
-            isAiGenerated: false,
-          },
-          {
-            content: 'Здравствуйте! Я вижу что у вас критическая проблема с приложением. Это приоритетное обращение, и оператор свяжется с вами в ближайшее время.',
-            senderId: aiBot.id,
-            isAiGenerated: true,
-          },
-          {
-            content: 'Здравствуйте! Это известная проблема в версии 2.1.0. Пожалуйста, обновите приложение до версии 2.1.1 - проблема исправлена.',
-            senderId: operator2.id,
-            isAiGenerated: false,
-          },
-          {
-            content: 'Спасибо огромное! Обновил, всё работает!',
-            senderId: client1.id,
-            isAiGenerated: false,
-          },
-        ],
-      },
+      aiSummary: 'Проблема с установкой программы 1С',
+      aiSuggestedReply: 'Пожалуйста, предоставьте скриншот ошибки для диагностики проблемы.',
     },
-  });
+    [
+      { senderId: alisherClient.id, content: 'Выдает ошибку при установке, что делать?' },
+    ]
+  );
 
-  const ticket4 = await prisma.ticket.create({
-    data: {
-      subject: 'Қызметті қалай қосуға болады?',
-      description: 'Сәлеметсіз бе! Қызметті қалай қосуға болады? Толық ақпарат берсеңіз.',
-      clientId: client2.id,
-      departmentId: general.id,
+  // KAZAKH TICKETS (5) - 3 positive, 2 negative
+  // 6. KZ - Positive - RESOLVED
+  await createTicketWithMessages(
+    {
+      subject: 'Email қолжетімді емес',
+      description: 'Сәлеметсіз бе! Email-ға кіре алмай жатырмын. Көмектесе аласыз ба?',
+      status: TicketStatus.RESOLVED,
+      priority: TicketPriority.MEDIUM,
+      channel: Channel.WEB,
+      language: Language.KZ,
+      clientId: maxClient.id,
+      operatorId: maxOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Email/Access',
+      aiSentiment: 'neutral',
+      aiSummary: 'Клиент не может получить доступ к электронной почте',
+      resolvedAt: new Date('2025-12-03T16:45:00'),
+    },
+    [
+      { senderId: maxClient.id, content: 'Email ашылмайды' },
+      { senderId: maxOperator.id, content: 'Парольді қайта теріп көріңіз' },
+      { senderId: maxClient.id, content: 'Рахмет, жұмыс істеп тұр!' },
+    ]
+  );
+
+  // 7. KZ - Negative - OPEN
+  await createTicketWithMessages(
+    {
+      subject: 'Компьютер өте баяу жұмыс істейді',
+      description: 'Компьютер мүлдем тежеліп тұр! Қосылуы 10 минут алады! Бұл қалай?!',
       status: TicketStatus.OPEN,
+      priority: TicketPriority.HIGH,
+      channel: Channel.PHONE,
+      language: Language.KZ,
+      clientId: alisherClient.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Hardware/Performance',
+      aiSentiment: 'negative',
+      aiSummary: 'Жалоба на медленную работу компьютера',
+      aiSuggestedReply: 'Специалист придет для диагностики в ближайшее время.',
+    },
+    [
+      { senderId: alisherClient.id, content: 'Компьютер өте баяу! Не істеу керек?' },
+      { senderId: aiBot.id, content: 'Маман жақын арада келеді.', isAi: true },
+    ]
+  );
+
+  // 8. KZ - Positive - CLOSED
+  await createTicketWithMessages(
+    {
+      subject: 'Жаңа бағдарламаны орнату',
+      description: 'Zoom бағдарламасын орнатуға көмек керек.',
+      status: TicketStatus.CLOSED,
       priority: TicketPriority.LOW,
       channel: Channel.WEB,
       language: Language.KZ,
-      aiCategory: 'Консультация',
+      clientId: maxClient.id,
+      operatorId: alisherOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Software/Installation',
       aiSentiment: 'positive',
-      aiSummary: 'Клиент интересуется подключением услуги на казахском языке.',
-      messages: {
-        create: [
-          {
-            content: 'Сәлеметсіз бе! Қызметті қалай қосуға болады? Толық ақпарат берсеңіз.',
-            senderId: client2.id,
-            isAiGenerated: false,
-          },
-          {
-            content: 'Сәлеметсіз бе! Сіздің өтінішіңізді қабылдадым. Оператор жақын арада сізге толық ақпарат береді.',
-            senderId: aiBot.id,
-            isAiGenerated: true,
-          },
-        ],
-      },
+      aiSummary: 'Запрос на помощь с установкой Zoom',
+      resolvedAt: new Date('2025-12-02T11:00:00'),
     },
-  });
+    [
+      { senderId: maxClient.id, content: 'Zoom қалай орнатамын?' },
+      { senderId: alisherOperator.id, content: 'Сілтемені жібердім, орнатып көріңіз' },
+      { senderId: maxClient.id, content: 'Орнатылды, рахмет!' },
+    ]
+  );
 
-  const ticket5 = await prisma.ticket.create({
-    data: {
-      subject: 'Запрос на интеграцию с CRM',
-      description: 'Мы рассматриваем ваш сервис для нашей компании. Есть ли возможность интеграции с нашей CRM (Битрикс24)?',
-      clientId: client1.id,
-      departmentId: sales.id,
-      status: TicketStatus.WAITING_CLIENT,
+  // 9. KZ - Positive - IN_PROGRESS
+  await createTicketWithMessages(
+    {
+      subject: 'Wi-Fi қосылуға көмек',
+      description: 'Ұялы телефоннан Wi-Fi-ға қосыла алмай жатырмын.',
+      status: TicketStatus.IN_PROGRESS,
       priority: TicketPriority.MEDIUM,
       channel: Channel.EMAIL,
-      language: Language.RU,
-      aiCategory: 'Интеграция',
+      language: Language.KZ,
+      clientId: maxClient.id,
+      operatorId: maxOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Network/WiFi',
+      aiSentiment: 'neutral',
+      aiSummary: 'Проблема с подключением к Wi-Fi с мобильного устройства',
+    },
+    [
+      { senderId: maxClient.id, content: 'Телефон Wi-Fi-ды көрмейді' },
+      { senderId: maxOperator.id, content: 'Желі атауы мен құпия сөзін тексеріп жатырмын' },
+    ]
+  );
+
+  // 10. KZ - Negative - OPEN
+  await createTicketWithMessages(
+    {
+      subject: 'Жаңарту қатесі',
+      description: 'Windows жаңартуы орнатылмайды! Қате шығады! Шұғыл көмек!',
+      status: TicketStatus.OPEN,
+      priority: TicketPriority.URGENT,
+      channel: Channel.WEB,
+      language: Language.KZ,
+      clientId: alisherClient.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Software/Updates',
+      aiSentiment: 'negative',
+      aiSummary: 'Ошибка при установке обновлений Windows',
+      aiSuggestedReply: 'Біз қатені тексереміз және жақын арада шешім табамыз.',
+    },
+    [
+      { senderId: alisherClient.id, content: 'Windows жаңартылмайды! Қате!' },
+    ]
+  );
+
+  // ENGLISH TICKETS (5) - 3 positive, 2 negative
+  // 11. EN - Positive - RESOLVED
+  await createTicketWithMessages(
+    {
+      subject: 'Need access to shared drive',
+      description: 'Hello! I need access to the marketing shared drive. Can you help?',
+      status: TicketStatus.RESOLVED,
+      priority: TicketPriority.MEDIUM,
+      channel: Channel.WEB,
+      language: Language.EN,
+      clientId: maxClient.id,
+      operatorId: alisherOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Access/Permissions',
       aiSentiment: 'positive',
-      aiSummary: 'B2B клиент интересуется API интеграцией с их CRM системой.',
-      messages: {
-        create: [
-          {
-            content: 'Добрый день! Мы рассматриваем ваш сервис для нашей компании. Есть ли возможность интеграции с нашей CRM (Битрикс24)? Нужна документация по API.',
-            senderId: client1.id,
-            isAiGenerated: false,
-          },
-          {
-            content: 'Здравствуйте! Благодарим за интерес к нашему сервису. Ваш запрос передан в отдел продаж, менеджер свяжется с вами для обсуждения интеграции.',
-            senderId: aiBot.id,
-            isAiGenerated: true,
-          },
-          {
-            content: 'Добрый день! Да, у нас есть готовая интеграция с Битрикс24. Отправляю вам документацию на почту. Также могу организовать демо-звонок для обсуждения деталей. Когда вам удобно?',
-            senderId: operator1.id,
-            isAiGenerated: false,
-          },
-        ],
-      },
+      aiSummary: 'Request for access to shared drive',
+      resolvedAt: new Date('2025-12-05T09:15:00'),
+    },
+    [
+      { senderId: maxClient.id, content: 'I need access to the marketing folder' },
+      { senderId: alisherOperator.id, content: 'Access granted. Please check now.' },
+      { senderId: maxClient.id, content: 'Perfect! Thank you!' },
+    ]
+  );
+
+  // 12. EN - Negative - WAITING_CLIENT
+  await createTicketWithMessages(
+    {
+      subject: 'SOFTWARE LICENSE EXPIRED!!!',
+      description: 'My Adobe license expired and I CANNOT WORK! This is unacceptable!',
+      status: TicketStatus.WAITING_CLIENT,
+      priority: TicketPriority.URGENT,
+      channel: Channel.EMAIL,
+      language: Language.EN,
+      clientId: alisherClient.id,
+      operatorId: maxOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Software/License',
+      aiSentiment: 'negative',
+      aiSummary: 'Клиент недоволен истекшей лицензией Adobe',
+    },
+    [
+      { senderId: alisherClient.id, content: 'My license expired! I need it NOW!' },
+      { senderId: maxOperator.id, content: 'Please provide your Adobe account email for renewal' },
+      { senderId: aiBot.id, content: 'We are processing your license renewal request.', isAi: true },
+    ]
+  );
+
+  // 13. EN - Positive - CLOSED
+  await createTicketWithMessages(
+    {
+      subject: 'How to set up email signature',
+      description: 'Could you please help me set up my email signature?',
+      status: TicketStatus.CLOSED,
+      priority: TicketPriority.LOW,
+      channel: Channel.WEB,
+      language: Language.EN,
+      clientId: maxClient.id,
+      operatorId: alisherOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Email/Configuration',
+      aiSentiment: 'positive',
+      aiSummary: 'Помощь с настройкой подписи электронной почты',
+      resolvedAt: new Date('2025-12-01T14:30:00'),
+    },
+    [
+      { senderId: maxClient.id, content: 'Need help with email signature' },
+      { senderId: alisherOperator.id, content: 'Here is the guide: [link to instructions]' },
+      { senderId: maxClient.id, content: 'Got it, thanks!' },
+      { senderId: alisherOperator.id, content: 'You\'re welcome!' },
+    ]
+  );
+
+  // 14. EN - Negative - OPEN
+  await createTicketWithMessages(
+    {
+      subject: 'Keyboard not working properly',
+      description: 'Some keys on my keyboard don\'t work. Very frustrating! Need replacement ASAP!',
+      status: TicketStatus.OPEN,
+      priority: TicketPriority.HIGH,
+      channel: Channel.PHONE,
+      language: Language.EN,
+      clientId: alisherClient.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Hardware/Keyboard',
+      aiSentiment: 'negative',
+      aiSummary: 'Клавиатура работает некорректно, требуется замена',
+      aiSuggestedReply: 'We will arrange a keyboard replacement within 24 hours.',
+    },
+    [
+      { senderId: alisherClient.id, content: 'Keyboard broken! Letters missing when typing!' },
+      { senderId: aiBot.id, content: 'We will arrange a replacement keyboard for you.', isAi: true },
+    ]
+  );
+
+  // 15. EN - Positive - RESOLVED
+  await createTicketWithMessages(
+    {
+      subject: 'Request for software installation',
+      description: 'Hi! Could you please install Microsoft Teams on my computer?',
+      status: TicketStatus.RESOLVED,
+      priority: TicketPriority.MEDIUM,
+      channel: Channel.WEB,
+      language: Language.EN,
+      clientId: maxClient.id,
+      operatorId: maxOperator.id,
+      departmentId: itSupport.id,
+      aiCategory: 'Software/Installation',
+      aiSentiment: 'positive',
+      aiSummary: 'Запрос на установку Microsoft Teams',
+      resolvedAt: new Date('2025-12-06T10:00:00'),
+    },
+    [
+      { senderId: maxClient.id, content: 'Can you install Teams for me?' },
+      { senderId: maxOperator.id, content: 'Sure! Installing it now.' },
+      { senderId: maxOperator.id, content: 'Done! Teams is installed and ready to use.' },
+      { senderId: maxClient.id, content: 'Awesome, thank you so much!' },
+    ]
+  );
+
+  console.log('✅ Tickets created');
+
+  // ============ CALL LOGS (5) ============
+  console.log('📞 Creating call logs...');
+
+  // 1. COMPLETED
+  await prisma.callLog.create({
+    data: {
+      callId: 'KCELL-CALL-001',
+      phone: '+77001234567',
+      diversion: '1234',
+      direction: CallDirection.IN,
+      status: CallStatus.COMPLETED,
+      userId: 'max_operator_ext',
+      ext: '101',
+      groupRealName: 'IT Support',
+      startedAt: new Date('2025-12-06T09:00:00'),
+      answeredAt: new Date('2025-12-06T09:00:15'),
+      endedAt: new Date('2025-12-06T09:03:15'),
+      duration: 180,
+      recordingUrl: 'https://vpbx.kcell.kz/recordings/KCELL-CALL-001.mp3',
+      transcription: 'Клиент: Здравствуйте, не работает интернет.\nОператор: Добрый день! Сейчас проверим. Какой у вас адрес?\nКлиент: Офис 405.\nОператор: Понял, проверяю... Проблема в роутере, перезагружаю.\nКлиент: Спасибо, заработало!',
+      aiSummary: 'Клиент сообщил о проблеме с интернетом. Оператор диагностировал проблему с роутером и решил перезагрузкой.',
+      aiSentiment: 'positive',
+      rating: 5,
+      operatorId: maxOperator.id,
     },
   });
 
-  console.log('  Created tickets with messages');
+  // 2. MISSED
+  await prisma.callLog.create({
+    data: {
+      callId: 'KCELL-CALL-002',
+      phone: '+77002345678',
+      diversion: '1234',
+      direction: CallDirection.IN,
+      status: CallStatus.MISSED,
+      userId: null,
+      ext: null,
+      groupRealName: 'IT Support',
+      startedAt: new Date('2025-12-06T10:30:00'),
+      endedAt: new Date('2025-12-06T10:30:45'),
+      duration: 0,
+    },
+  });
 
-  // Добавляем больше тикетов для красивых графиков
-  const additionalTickets = [
-    // Тикеты за последние 7 дней для timeline графика
-    { subject: 'Не работает функция экспорта', days: 0, status: TicketStatus.OPEN, priority: TicketPriority.HIGH, category: 'technical', sentiment: 'negative', channel: Channel.WEB },
-    { subject: 'Вопрос по тарифам', days: 0, status: TicketStatus.OPEN, priority: TicketPriority.LOW, category: 'billing', sentiment: 'neutral', channel: Channel.EMAIL },
-    { subject: 'Ошибка 500 при загрузке', days: 1, status: TicketStatus.IN_PROGRESS, priority: TicketPriority.URGENT, category: 'technical', sentiment: 'negative', channel: Channel.WEB },
-    { subject: 'Как изменить пароль?', days: 1, status: TicketStatus.RESOLVED, priority: TicketPriority.LOW, category: 'account', sentiment: 'neutral', channel: Channel.TELEGRAM, resolved: true },
-    { subject: 'Проблема с уведомлениями', days: 1, status: TicketStatus.OPEN, priority: TicketPriority.MEDIUM, category: 'technical', sentiment: 'negative', channel: Channel.WEB },
-    { subject: 'Спасибо за помощь!', days: 2, status: TicketStatus.CLOSED, priority: TicketPriority.LOW, category: 'general', sentiment: 'positive', channel: Channel.WEB, resolved: true },
-    { subject: 'Не приходят письма', days: 2, status: TicketStatus.RESOLVED, priority: TicketPriority.HIGH, category: 'technical', sentiment: 'negative', channel: Channel.EMAIL, resolved: true },
-    { subject: 'Қолдау қызметі', days: 2, status: TicketStatus.IN_PROGRESS, priority: TicketPriority.MEDIUM, category: 'general', sentiment: 'neutral', channel: Channel.WEB, lang: Language.KZ },
-    { subject: 'Refund request', days: 3, status: TicketStatus.RESOLVED, priority: TicketPriority.HIGH, category: 'billing', sentiment: 'negative', channel: Channel.EMAIL, resolved: true, lang: Language.EN },
-    { subject: 'API rate limits', days: 3, status: TicketStatus.IN_PROGRESS, priority: TicketPriority.MEDIUM, category: 'technical', sentiment: 'neutral', channel: Channel.WEB, lang: Language.EN },
-    { subject: 'Медленная загрузка страниц', days: 3, status: TicketStatus.RESOLVED, priority: TicketPriority.MEDIUM, category: 'technical', sentiment: 'negative', channel: Channel.WEB, resolved: true },
-    { subject: 'Возврат средств', days: 4, status: TicketStatus.CLOSED, priority: TicketPriority.HIGH, category: 'billing', sentiment: 'negative', channel: Channel.EMAIL, resolved: true },
-    { subject: 'Консультация по продукту', days: 4, status: TicketStatus.RESOLVED, priority: TicketPriority.LOW, category: 'sales', sentiment: 'positive', channel: Channel.TELEGRAM, resolved: true },
-    { subject: 'Баг в мобильном приложении', days: 4, status: TicketStatus.RESOLVED, priority: TicketPriority.URGENT, category: 'technical', sentiment: 'negative', channel: Channel.WEB, resolved: true },
-    { subject: 'Где найти документацию?', days: 5, status: TicketStatus.CLOSED, priority: TicketPriority.LOW, category: 'general', sentiment: 'neutral', channel: Channel.WEB, resolved: true },
-    { subject: 'Не могу скачать отчёт', days: 5, status: TicketStatus.RESOLVED, priority: TicketPriority.MEDIUM, category: 'technical', sentiment: 'negative', channel: Channel.EMAIL, resolved: true },
-    { subject: 'Предложение по улучшению', days: 5, status: TicketStatus.CLOSED, priority: TicketPriority.LOW, category: 'general', sentiment: 'positive', channel: Channel.WEB, resolved: true },
-    { subject: 'Оплата картой не проходит', days: 6, status: TicketStatus.RESOLVED, priority: TicketPriority.URGENT, category: 'billing', sentiment: 'negative', channel: Channel.WEB, resolved: true },
-    { subject: 'Двойное списание', days: 6, status: TicketStatus.RESOLVED, priority: TicketPriority.URGENT, category: 'billing', sentiment: 'negative', channel: Channel.EMAIL, resolved: true },
-    { subject: 'Отличный сервис!', days: 6, status: TicketStatus.CLOSED, priority: TicketPriority.LOW, category: 'general', sentiment: 'positive', channel: Channel.TELEGRAM, resolved: true },
-  ];
+  // 3. CANCELLED
+  await prisma.callLog.create({
+    data: {
+      callId: 'KCELL-CALL-003',
+      phone: '+77003456789',
+      diversion: '1234',
+      direction: CallDirection.IN,
+      status: CallStatus.CANCELLED,
+      userId: 'alisher_operator_ext',
+      ext: '102',
+      groupRealName: 'IT Support',
+      startedAt: new Date('2025-12-06T11:15:00'),
+      endedAt: new Date('2025-12-06T11:15:10'),
+      duration: 0,
+      operatorId: alisherOperator.id,
+    },
+  });
 
-  const clients = [client1, client2];
-  const operators = [operator1, operator2];
-  const depts = [techSupport, billing, general, sales];
+  // 4. INCOMING
+  await prisma.callLog.create({
+    data: {
+      callId: 'KCELL-CALL-004',
+      phone: '+77004567890',
+      diversion: '1234',
+      direction: CallDirection.IN,
+      status: CallStatus.INCOMING,
+      userId: null,
+      ext: null,
+      groupRealName: 'IT Support',
+      startedAt: new Date('2025-12-06T12:00:00'),
+      duration: 0,
+    },
+  });
 
-  for (const t of additionalTickets) {
-    const createdAt = new Date();
-    createdAt.setDate(createdAt.getDate() - t.days);
-    createdAt.setHours(Math.floor(Math.random() * 24), Math.floor(Math.random() * 60));
-    
-    const resolvedAt = t.resolved ? new Date(createdAt.getTime() + Math.random() * 24 * 60 * 60 * 1000) : null;
-    
-    await prisma.ticket.create({
-      data: {
-        subject: t.subject,
-        description: `Описание обращения: ${t.subject}`,
-        clientId: clients[Math.floor(Math.random() * clients.length)].id,
-        operatorId: t.status !== TicketStatus.OPEN ? operators[Math.floor(Math.random() * operators.length)].id : null,
-        departmentId: depts[Math.floor(Math.random() * depts.length)].id,
-        status: t.status,
-        priority: t.priority,
-        channel: t.channel,
-        language: t.lang || Language.RU,
-        aiCategory: t.category,
-        aiSentiment: t.sentiment,
-        createdAt,
-        resolvedAt,
-        slaDeadline: new Date(createdAt.getTime() + 24 * 60 * 60 * 1000),
-      },
-    });
-  }
+  // 5. ACCEPTED
+  await prisma.callLog.create({
+    data: {
+      callId: 'KCELL-CALL-005',
+      phone: '+77005678901',
+      diversion: '1234',
+      direction: CallDirection.IN,
+      status: CallStatus.ACCEPTED,
+      userId: 'max_operator_ext',
+      ext: '101',
+      groupRealName: 'IT Support',
+      startedAt: new Date('2025-12-06T13:00:00'),
+      answeredAt: new Date('2025-12-06T13:00:08'),
+      duration: 0,
+      operatorId: maxOperator.id,
+    },
+  });
 
-  console.log(`  Created ${additionalTickets.length} additional tickets for charts`);
+  console.log('✅ Call logs created');
 
-  // Статистика
-  console.log('\n  Seed Summary:');
-  console.log(`   Users: 6 (1 AI bot, 1 admin, 2 operators, 2 clients)`);
-  console.log(`   Departments: 4`);
-  console.log(`   Tickets: ${5 + additionalTickets.length}`);
-  console.log('\n  Test Accounts (password: password123):');
-  console.log('   Admin:    admin@qoldai.kz');
-  console.log('   Operator: operator@qoldai.kz');
-  console.log('   Operator: support@qoldai.kz');
-  console.log('   Client:   client@example.com');
-  console.log('   Client:   user@example.com');
-  console.log('\n  Seeding completed!');
+  console.log('🎉 Seed completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error('  Seed error:', e);
+    console.error('❌ Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {

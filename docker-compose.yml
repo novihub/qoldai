@@ -27,44 +27,41 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/hackathon?schema=public&sslmode=disable
+      DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-      FRONTEND_URL: ${FRONTEND_URL:-https://qoldai.itfest2025.novitech.dev}
+      FRONTEND_URL: ${FRONTEND_URL}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://api.qoldai.itfest2025.novitech.dev/auth/google/callback}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
       GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL}
       RESEND_API_KEY: ${RESEND_API_KEY}
-      MAIL_FROM: ${MAIL_FROM:-noreply-coldai-itfest2025@notify.novitech.dev}
-      # IMAP for email receiving
-      IMAP_HOST: ${IMAP_HOST:-imap.gmail.com}
-      IMAP_PORT: ${IMAP_PORT:-993}
+      MAIL_FROM: ${MAIL_FROM}
+      IMAP_HOST: ${IMAP_HOST}
+      IMAP_PORT: ${IMAP_PORT}
       IMAP_USER: ${IMAP_USER}
       IMAP_PASSWORD: ${IMAP_PASSWORD}
-      IMAP_TLS: ${IMAP_TLS:-true}
-      EMAIL_POLL_INTERVAL: ${EMAIL_POLL_INTERVAL:-60000}
-      # AI Provider
-      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      IMAP_TLS: ${IMAP_TLS}
+      EMAIL_POLL_INTERVAL: ${EMAIL_POLL_INTERVAL}
+      AI_PROVIDER: ${AI_PROVIDER}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      # Kcell VPBX (IP Telephony)
-      KCELL_VPBX_URL: ${KCELL_VPBX_URL:-https://kurbanova.vpbx.kcell.kz/crmapi/v1}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      KCELL_VPBX_URL: ${KCELL_VPBX_URL}
       KCELL_VPBX_API_KEY: ${KCELL_VPBX_API_KEY}
       KCELL_CRM_KEY: ${KCELL_CRM_KEY}
-      PORT: 4000
+      PORT: ${PORT}
     ports:
-      - "4010:4000"
+      - "4010:${PORT}"
 
   web:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.qoldai.itfest2025.novitech.dev}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     container_name: hackathon-web
     restart: unless-stopped
     depends_on:

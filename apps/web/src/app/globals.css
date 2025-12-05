@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+/* Highlight.js theme for code blocks */
+@import "highlight.js/styles/github.css";
+
+@theme {
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-secondary: #6b7280;
+  --color-background: #ffffff;
+  --color-foreground: #111827;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #6b7280;
+  --color-border: #e5e7eb;
+  --color-input: #e5e7eb;
+  --color-ring: #3b82f6;
+  --color-error: #ef4444;
+  --color-success: #22c55e;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+}

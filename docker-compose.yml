@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: hackathon-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hackathon
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5442:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: hackathon-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/hackathon?schema=public&sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-AuSdu4ZzK5dqW+hrxpwMeh0DFBUsv1VwpilOQVkAVWQ=}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-3s8LRAm2L0LvDjCjNAhFyPFK1QDQBP+dDj2A2yt4qhEHovrzeq/nCBfhpsY7DWXEnLzK2P6aX7YnMZwtsJNssQ==}
+      FRONTEND_URL: ${FRONTEND_URL:-https://itfest.novitech.dev}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-278251785844-koa8h0o8qr9mu9j2tfv8gskhip8nnif2.apps.googleusercontent.com}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-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}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-https://api.itfest.novitech.dev/auth/google/callback}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-Ov23li1uCWwrVmvB0dT5}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-40b24d26a38523e5420238d7577871fce44494aa}
+      GITHUB_CALLBACK_URL: ${GITHUB_CALLBACK_URL:-https://api.itfest.novitech.dev/auth/github/callback}
+      RESEND_API_KEY: ${RESEND_API_KEY:-re_UQcy572Q_B2fM6xLLiasdD6UF9rMtJwZS}
+      MAIL_FROM: ${MAIL_FROM:-noreply-itfest@notify.novitech.dev}
+      AI_PROVIDER: ${AI_PROVIDER:-openai}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-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}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      PORT: 4000
+    ports:
+      - "4010:4000"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api.itfest.novitech.dev}
+    container_name: hackathon-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3010:3000"
+
+volumes:
+  postgres_data:

@@ -1,6 +1,5 @@
 import { toast } from 'sonner';
 
-// Обёртки для типичных уведомлений
 export const notify = {
   success: (message: string, description?: string) => {
     toast.success(message, { description });
@@ -39,7 +38,6 @@ export const notify = {
   },
 };
 
-// Специфичные уведомления для нашего приложения
 export const appNotify = {
   loginSuccess: () => notify.success('Добро пожаловать!', 'Вы успешно вошли в систему'),
   

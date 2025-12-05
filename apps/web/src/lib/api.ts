@@ -296,13 +296,13 @@ export interface TicketStats {
   closedTickets: number;
   urgentTickets: number;
   
-  // AI & Automation metrics
+  // AI and Automation metrics
   aiClassifiedTickets: number;
   aiClassificationRate: number;
   autoResolvedTickets: number;
   autoResolutionRate: number;
   
-  // Response times
+  // response times
   avgResolutionTimeHours: number;
   avgFirstResponseTimeMinutes: number;
   
@@ -310,14 +310,14 @@ export interface TicketStats {
   slaBreachedTickets: number;
   slaComplianceRate: number;
   
-  // Distributions
+  // distributions
   channelDistribution: { web: number; email: number; telegram: number };
   languageDistribution: { ru: number; kz: number; en: number };
   categoryDistribution: { category: string; count: number }[];
   sentimentDistribution: { sentiment: string; count: number }[];
 }
 
-// Create new ticket
+// create new ticket
 export async function createTicket(dto: CreateTicketDto, accessToken: string): Promise<Ticket> {
   const response = await fetch(`${API_URL}/tickets`, {
     method: 'POST',
@@ -336,7 +336,7 @@ export async function createTicket(dto: CreateTicketDto, accessToken: string): P
   return response.json();
 }
 
-// Get user's tickets
+// get user's tickets
 export async function getMyTickets(accessToken: string): Promise<Ticket[]> {
   const response = await fetch(`${API_URL}/tickets/my`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -346,7 +346,7 @@ export async function getMyTickets(accessToken: string): Promise<Ticket[]> {
   return response.json();
 }
 
-// Get all tickets (for operators/admins)
+// get all tickets (for operators/admins)
 export async function getAllTickets(
   accessToken: string,
   filters?: { status?: TicketStatus; priority?: TicketPriority; search?: string }
@@ -364,7 +364,7 @@ export async function getAllTickets(
   return response.json();
 }
 
-// Get assigned tickets (for operators)
+// get assigned tickets (for operators)
 export async function getAssignedTickets(accessToken: string): Promise<Ticket[]> {
   const response = await fetch(`${API_URL}/tickets/assigned`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -374,7 +374,7 @@ export async function getAssignedTickets(accessToken: string): Promise<Ticket[]>
   return response.json();
 }
 
-// Get single ticket
+// get single ticket
 export async function getTicket(ticketId: string, accessToken: string): Promise<Ticket> {
   const response = await fetch(`${API_URL}/tickets/${ticketId}`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -384,7 +384,7 @@ export async function getTicket(ticketId: string, accessToken: string): Promise<
   return response.json();
 }
 
-// Update ticket
+// update ticket
 export async function updateTicket(
   ticketId: string,
   dto: UpdateTicketDto,
@@ -403,7 +403,7 @@ export async function updateTicket(
   return response.json();
 }
 
-// Add message to ticket
+// add message to ticket
 export async function addTicketMessage(
   ticketId: string,
   content: string,
@@ -422,7 +422,7 @@ export async function addTicketMessage(
   return response.json();
 }
 
-// Get AI suggestion (for operators)
+// get AI suggestion (for operators)
 export async function getAiSuggestion(
   ticketId: string,
   accessToken: string
@@ -435,7 +435,7 @@ export async function getAiSuggestion(
   return response.json();
 }
 
-// Summarize ticket (for operators)
+// summarize ticket (for operators)
 export async function summarizeTicket(
   ticketId: string,
   accessToken: string
@@ -449,7 +449,7 @@ export async function summarizeTicket(
   return response.json();
 }
 
-// Take ticket (self-assign for operators)
+// take ticket (self-assign for operators)
 export async function takeTicket(ticketId: string, accessToken: string): Promise<Ticket> {
   const response = await fetch(`${API_URL}/tickets/${ticketId}/take`, {
     method: 'PUT',
@@ -460,7 +460,7 @@ export async function takeTicket(ticketId: string, accessToken: string): Promise
   return response.json();
 }
 
-// Get ticket stats (for operators/admins)
+// get ticket stats (for operators/admins)
 export async function getTicketStats(accessToken: string): Promise<TicketStats> {
   const response = await fetch(`${API_URL}/tickets/stats`, {
     headers: { Authorization: `Bearer ${accessToken}` },
@@ -471,7 +471,7 @@ export async function getTicketStats(accessToken: string): Promise<TicketStats> 
 }
 
 
-// Timeline stats type
+// timeline stats type
 export interface TimelineData {
   date: string;
   created: number;
@@ -483,7 +483,7 @@ export interface TimelineStats {
   timeline: TimelineData[];
 }
 
-// Get timeline stats (last 7 days)
+// get timeline stats (last 7 days)
 export async function getTimelineStats(accessToken: string): Promise<TimelineStats> {
   const response = await fetch(`${API_URL}/tickets/stats/timeline`, {
     headers: { Authorization: `Bearer ${accessToken}` },

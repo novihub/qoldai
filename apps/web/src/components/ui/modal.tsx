@@ -34,7 +34,7 @@ export function Modal({
   closeOnEscape = true,
   showCloseButton = true,
 }: ModalProps) {
-  // Handle escape key
+  // handle escape key
   useEffect(() => {
     if (!closeOnEscape) return;
 
@@ -48,7 +48,7 @@ export function Modal({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose, closeOnEscape]);
 
-  // Lock body scroll when modal is open
+  // lock body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -130,13 +130,13 @@ export function Modal({
           </div>
         )}
 
-        {/* Content */}
+        {/* content */}
         <div className="p-6">{children}</div>
       </div>
     </div>
   );
 
-  // Use portal to render modal at the end of body
+  // use portal to render modal at the end of body
   if (typeof window === 'undefined') return null;
   return createPortal(modalContent, document.body);
 }

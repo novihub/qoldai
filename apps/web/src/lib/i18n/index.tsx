@@ -18,12 +18,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // Load language from localStorage
     const saved = localStorage.getItem(STORAGE_KEY) as Language | null;
     if (saved && translations[saved]) {
       setLanguageState(saved);
     } else {
-      // Try to detect browser language
       const browserLang = navigator.language.slice(0, 2).toLowerCase();
       if (browserLang === 'kk' || browserLang === 'kz') {
         setLanguageState('kz');
@@ -41,7 +39,6 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const t = translations[language] as Translations;
 
-  // Prevent hydration mismatch
   if (!mounted) {
     return (
       <I18nContext.Provider value={{ language: 'ru', setLanguage, t: translations.ru as Translations }}>
@@ -65,7 +62,6 @@ export function useI18n() {
   return context;
 }
 
-// Language Switcher Component
 export function LanguageSwitcher({ className = '' }: { className?: string }) {
   const { language, setLanguage, t } = useI18n();
 

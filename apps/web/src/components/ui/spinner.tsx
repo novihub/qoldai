@@ -36,7 +36,6 @@ export function Spinner({ size = 'md', className = '' }: SpinnerProps) {
   );
 }
 
-// Full page loading spinner
 export function PageLoader({ text = 'Загрузка...' }: { text?: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center">
@@ -46,7 +45,6 @@ export function PageLoader({ text = 'Загрузка...' }: { text?: string }) 
   );
 }
 
-// Skeleton loader for content
 export interface SkeletonProps {
   className?: string;
   variant?: 'text' | 'circular' | 'rectangular';
@@ -80,7 +78,6 @@ export function Skeleton({
   );
 }
 
-// Message skeleton for chat
 export function MessageSkeleton() {
   return (
     <div className="flex gap-3 p-4">

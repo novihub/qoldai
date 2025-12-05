@@ -1,0 +1,34 @@
+{
+  "name": "hackathon-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:web": "npm run dev --workspace=@hackathon/web",
+    "dev:api": "npm run dev --workspace=@hackathon/api",
+    "build": "npm run build --workspaces",
+    "build:web": "npm run build --workspace=@hackathon/web",
+    "build:api": "npm run build --workspace=@hackathon/api",
+    "lint": "npm run lint --workspaces",
+    "db:generate": "npm run db:generate --workspace=@hackathon/api",
+    "db:migrate": "npm run db:migrate --workspace=@hackathon/api",
+    "db:push": "npm run db:push --workspace=@hackathon/api",
+    "db:studio": "npm run db:studio --workspace=@hackathon/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "dependencies": {
+    "@nestjs/swagger": "^11.2.3",
+    "swagger-ui-express": "^5.0.1"
+  }
+}

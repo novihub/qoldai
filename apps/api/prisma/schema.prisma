@@ -1,0 +1,221 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+
+enum UserRole {
+  CLIENT
+  OPERATOR
+  ADMIN
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_CLIENT
+  WAITING_OPERATOR
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum Channel {
+  WEB
+  PHONE
+  EMAIL
+  TELEGRAM
+  WHATSAPP
+}
+
+enum Language {
+  RU
+  KZ
+  EN
+}
+
+// ============ MODELS ============
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String?
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  role          UserRole  @default(CLIENT)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts          Account[]
+  verificationCodes VerificationCode[]
+  chats             Chat[]
+  
+  // Ticket relations
+  clientTickets     Ticket[]        @relation("ClientTickets")
+  operatorTickets   Ticket[]        @relation("OperatorTickets")
+  ticketMessages    TicketMessage[]
+  departments       Department[]    @relation("DepartmentOperators")
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model VerificationCode {
+  id        String   @id @default(cuid())
+  email     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, code])
+  @@map("verification_codes")
+}
+
+model Chat {
+  id        String    @id @default(cuid())
+  title     String?
+  userId    String
+  role      String    @default("default") // system prompt role
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@index([userId])
+  @@map("chats")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  chatId    String
+  role      String   // 'user' | 'assistant' | 'system'
+  content   String   @db.Text
+  imageUrl  String?
+  createdAt DateTime @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId])
+  @@map("messages")
+}
+
+// ============ QOLDAI TICKET SYSTEM ============
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  tickets   Ticket[]
+  operators User[]   @relation("DepartmentOperators")
+
+  @@map("departments")
+}
+
+model Ticket {
+  id              String         @id @default(cuid())
+  subject         String
+  description     String         @db.Text
+  status          TicketStatus   @default(OPEN)
+  priority        TicketPriority @default(MEDIUM)
+  channel         Channel        @default(WEB)
+  language        Language       @default(RU)
+  
+  // AI-generated fields
+  aiCategory      String?
+  aiSentiment     String?        // positive, negative, neutral
+  aiSummary       String?        @db.Text
+  aiSuggestedReply String?       @db.Text
+  
+  // Relations
+  clientId        String
+  client          User           @relation("ClientTickets", fields: [clientId], references: [id])
+  
+  operatorId      String?
+  operator        User?          @relation("OperatorTickets", fields: [operatorId], references: [id])
+  
+  departmentId    String?
+  department      Department?    @relation(fields: [departmentId], references: [id])
+  
+  // SLA
+  slaDeadline     DateTime?
+  resolvedAt      DateTime?
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  messages        TicketMessage[]
+  attachments     Attachment[]
+
+  @@index([clientId])
+  @@index([operatorId])
+  @@index([status])
+  @@index([priority])
+  @@map("tickets")
+}
+
+model TicketMessage {
+  id        String   @id @default(cuid())
+  ticketId  String
+  senderId  String
+  content   String   @db.Text
+  isAiGenerated Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender User   @relation(fields: [senderId], references: [id])
+
+  @@index([ticketId])
+  @@map("ticket_messages")
+}
+
+model Attachment {
+  id        String   @id @default(cuid())
+  ticketId  String
+  filename  String
+  url       String
+  mimeType  String
+  size      Int
+  createdAt DateTime @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}

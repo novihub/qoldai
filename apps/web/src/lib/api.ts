@@ -469,3 +469,26 @@ export async function getTicketStats(accessToken: string): Promise<TicketStats> 
   if (!response.ok) throw new Error('Failed to get stats');
   return response.json();
 }
+
+
+// Timeline stats type
+export interface TimelineData {
+  date: string;
+  created: number;
+  resolved: number;
+  [key: string]: unknown;
+}
+
+export interface TimelineStats {
+  timeline: TimelineData[];
+}
+
+// Get timeline stats (last 7 days)
+export async function getTimelineStats(accessToken: string): Promise<TimelineStats> {
+  const response = await fetch(`${API_URL}/tickets/stats/timeline`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  if (!response.ok) throw new Error('Failed to get timeline stats');
+  return response.json();
+}

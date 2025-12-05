@@ -1,21 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/components/auth-provider';
 import { 
   getAllTickets, 
   getTicketStats,
+  getTimelineStats,
   takeTicket,
   Ticket, 
   TicketStats,
+  TimelineStats,
   TicketStatus, 
   TicketPriority 
 } from '@/lib/api';
 import { Button, Card, Badge, Spinner, Input } from '@/components/ui';
 import { notify } from '@/lib/toast';
 import { useI18n } from '@/lib/i18n';
+import { 
+  StatusPieChart, 
+  CategoryBarChart, 
+  TimelineChart, 
+  ChannelPieChart,
+  PriorityBarChart,
+} from '@/components/charts';
 
 const statusColors: Record<TicketStatus, 'default' | 'secondary' | 'success' | 'warning' | 'error'> = {
   OPEN: 'default',
@@ -40,41 +49,74 @@ export default function OperatorDashboard() {
   
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [stats, setStats] = useState<TicketStats | null>(null);
+  const [timeline, setTimeline] = useState<TimelineStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<TicketStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | 'all'>('all');
   const [search, setSearch] = useState('');
+  const [showCharts, setShowCharts] = useState(true);
+  const [isPolling, setIsPolling] = useState(true);
+  const prevTicketCount = useRef<number>(0);
 
   const dateLocale = language === 'kz' ? 'kk-KZ' : language === 'en' ? 'en-US' : 'ru-RU';
 
-  useEffect(() => {
+  // Функция загрузки данных
+  const loadData = useCallback(async (showLoader = false) => {
     if (!accessToken) return;
-
-    const loadData = async () => {
-      try {
-        const [ticketsData, statsData] = await Promise.all([
-          getAllTickets(accessToken, {
-            status: statusFilter !== 'all' ? statusFilter : undefined,
-            priority: priorityFilter !== 'all' ? priorityFilter : undefined,
-            search: search || undefined,
-          }),
-          getTicketStats(accessToken),
-        ]);
-        setTickets(ticketsData);
-        setStats(statsData);
-      } catch (error) {
-        console.error('Failed to load data:', error);
-        if (error instanceof Error && error.message.includes('403')) {
-          notify.error('Доступ запрещён. Эта страница только для операторов.');
-          router.push('/tickets');
-        }
-      } finally {
-        setIsLoading(false);
+    
+    if (showLoader) setIsLoading(true);
+    
+    try {
+      const [ticketsData, statsData, timelineData] = await Promise.all([
+        getAllTickets(accessToken, {
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+          search: search || undefined,
+        }),
+        getTicketStats(accessToken),
+        getTimelineStats(accessToken),
+      ]);
+      
+      // Уведомление о новых тикетах
+      if (prevTicketCount.current > 0 && ticketsData.length > prevTicketCount.current) {
+        const newCount = ticketsData.length - prevTicketCount.current;
+        notify.info(`  ${newCount} новый тикет!`);
+        // Воспроизвести звук (опционально)
+        try {
+          const audio = new Audio('/notification.mp3');
+          audio.volume = 0.3;
+          audio.play().catch(() => {});
+        } catch {}
       }
-    };
-
-    loadData();
+      prevTicketCount.current = ticketsData.length;
+      
+      setTickets(ticketsData);
+      setStats(statsData);
+      setTimeline(timelineData);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+      if (error instanceof Error && error.message.includes('403')) {
+        notify.error('Доступ запрещён. Эта страница только для операторов.');
+        router.push('/tickets');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }, [accessToken, statusFilter, priorityFilter, search, router]);
+
+  useEffect(() => {
+    loadData(true);
+  }, [loadData]);
+
+  useEffect(() => {
+    if (!isPolling || !accessToken) return;
+
+    const interval = setInterval(() => {
+      loadData(false);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isPolling, loadData, accessToken]);
 
   const handleTakeTicket = async (ticketId: string) => {
     if (!accessToken) return;
@@ -82,13 +124,7 @@ export default function OperatorDashboard() {
     try {
       await takeTicket(ticketId, accessToken);
       notify.success('Тикет взят в работу');
-      // Refresh tickets
-      const updated = await getAllTickets(accessToken, {
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        priority: priorityFilter !== 'all' ? priorityFilter : undefined,
-        search: search || undefined,
-      });
-      setTickets(updated);
+      loadData(false); // Обновить данные
     } catch (error) {
       notify.error('Не удалось взять тикет');
     }
@@ -116,11 +152,41 @@ export default function OperatorDashboard() {
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{t.operator.title}</h1>
-          <p className="text-gray-600">
-            {t.operator.subtitle}
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{t.operator.title}</h1>
+            <p className="text-gray-600">
+              {t.operator.subtitle}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Polling indicator */}
+            <div className="flex items-center gap-2 text-sm">
+              {isPolling && (
+                <span className="flex items-center gap-1.5 text-green-600">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  Live
+                </span>
+              )}
+            </div>
+            {/* <Button
+              variant={isPolling ? 'outline' : 'default'}
+              size="sm"
+              onClick={() => setIsPolling(!isPolling)}
+            >
+              {isPolling ? '⏸️ Пауза' : '▶️ Включить'}
+            </Button> */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => loadData(false)}
+            >
+                Обновить
+            </Button>
+          </div>
         </div>
 
         {/* Stats - Basic Metrics */}
@@ -218,15 +284,15 @@ export default function OperatorDashboard() {
                   <h3 className="text-sm font-medium text-gray-700 mb-3">{t.operator.languageDistribution}</h3>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">🇷🇺 {t.languages.ru}</span>
+                      <span className="text-sm text-gray-600">{t.languages.ru}</span>
                       <span className="font-medium">{stats.languageDistribution.ru}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">🇰🇿 {t.languages.kz}</span>
+                      <span className="text-sm text-gray-600">{t.languages.kz}</span>
                       <span className="font-medium">{stats.languageDistribution.kz}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">🇬🇧 {t.languages.en}</span>
+                      <span className="text-sm text-gray-600">{t.languages.en}</span>
                       <span className="font-medium">{stats.languageDistribution.en}</span>
                     </div>
                   </div>
@@ -239,15 +305,15 @@ export default function OperatorDashboard() {
                   <h3 className="text-sm font-medium text-gray-700 mb-3">{t.operator.channelDistribution}</h3>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">🌐 {t.channels.web}</span>
+                      <span className="text-sm text-gray-600">  {t.channels.web}</span>
                       <span className="font-medium">{stats.channelDistribution.web}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">📧 {t.channels.email}</span>
+                      <span className="text-sm text-gray-600">  {t.channels.email}</span>
                       <span className="font-medium">{stats.channelDistribution.email}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600">📱 {t.channels.telegram}</span>
+                      <span className="text-sm text-gray-600">  {t.channels.telegram}</span>
                       <span className="font-medium">{stats.channelDistribution.telegram}</span>
                     </div>
                   </div>
@@ -273,8 +339,92 @@ export default function OperatorDashboard() {
                 </div>
               </Card>
             </div>
+
+            {/* Charts Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {language === 'ru' ? '  Аналитика' : language === 'kz' ? '  Аналитика' : '  Analytics'}
+                </h2>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowCharts(!showCharts)}
+                >
+                  {showCharts 
+                    ? (language === 'ru' ? 'Скрыть' : language === 'kz' ? 'Жасыру' : 'Hide')
+                    : (language === 'ru' ? 'Показать' : language === 'kz' ? 'Көрсету' : 'Show')
+                  }
+                </Button>
+              </div>
+              
+              {showCharts && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Timeline Chart */}
+                  {timeline && (
+                    <TimelineChart 
+                      data={timeline.timeline}
+                      title={language === 'ru' ? 'Динамика за 7 дней' : language === 'kz' ? '7 күндік динамика' : '7 Day Trend'}
+                      createdLabel={language === 'ru' ? 'Создано' : language === 'kz' ? 'Құрылған' : 'Created'}
+                      resolvedLabel={language === 'ru' ? 'Решено' : language === 'kz' ? 'Шешілген' : 'Resolved'}
+                    />
+                  )}
+
+                  {/* Status Distribution */}
+                  <StatusPieChart 
+                    data={[
+                      { name: 'OPEN', value: stats.openTickets, label: t.status.OPEN },
+                      { name: 'IN_PROGRESS', value: stats.inProgressTickets, label: t.status.IN_PROGRESS },
+                      { name: 'RESOLVED', value: stats.resolvedTickets, label: t.status.RESOLVED },
+                      { name: 'CLOSED', value: stats.closedTickets, label: t.status.CLOSED },
+                    ].filter(d => d.value > 0)}
+                    title={language === 'ru' ? 'По статусам' : language === 'kz' ? 'Мәртебе бойынша' : 'By Status'}
+                  />
+
+                  {/* Category Distribution */}
+                  {stats.categoryDistribution.length > 0 && (
+                    <CategoryBarChart 
+                      data={stats.categoryDistribution.map(c => ({
+                        name: c.category || 'unknown',
+                        value: c.count,
+                      }))}
+                      title={language === 'ru' ? 'По категориям (AI)' : language === 'kz' ? 'Санаттар бойынша (AI)' : 'By Category (AI)'}
+                    />
+                  )}
+
+                  {/* Channel Distribution */}
+                  <ChannelPieChart 
+                    data={[
+                      { name: 'WEB', value: stats.channelDistribution.web },
+                      { name: 'EMAIL', value: stats.channelDistribution.email },
+                      { name: 'TELEGRAM', value: stats.channelDistribution.telegram },
+                    ].filter(d => d.value > 0)}
+                    title={language === 'ru' ? 'По каналам' : language === 'kz' ? 'Арналар бойынша' : 'By Channel'}
+                  />
+                </div>
+              )}
+            </div>
           </>
         )}
+
+        {/* Quick Actions */}
+        {/* <Card className="mb-6 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-100">
+          <div className="p-4">
+            <div className="flex flex-wrap items-center gap-4">
+              <span className="text-sm font-medium text-gray-700">
+                {language === 'ru' ? '  Быстрые действия:' : language === 'kz' ? '  Жылдам әрекеттер:' : '  Quick Actions:'}
+              </span>
+              <Link href="/operator/telephony">
+                <Button variant="default" size="sm" className="gap-2">
+                    {language === 'ru' ? 'Телефония' : language === 'kz' ? 'Телефония' : 'Telephony'}
+                </Button>
+              </Link>
+              <Button variant="ghost" size="sm" className="gap-2" onClick={() => window.location.reload()}>
+                  {language === 'ru' ? 'Обновить' : language === 'kz' ? 'Жаңарту' : 'Refresh'}
+              </Button>
+            </div>
+          </div>
+        </Card> */}
 
         {/* Filters */}
         <Card className="mb-6">
@@ -356,7 +506,7 @@ export default function OperatorDashboard() {
                       >
                         {ticket.subject}
                       </Link>
-                      {ticket._count?.messages && ticket._count.messages > 0 && (
+                      {!!ticket._count?.messages && ticket._count.messages > 0 && (
                         <span className="ml-2 text-xs text-gray-500">
                           ({ticket._count.messages} сообщ.)
                         </span>

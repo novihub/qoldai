@@ -7,6 +7,7 @@ import { UserModule } from './user/user.module';
 import { ChatModule } from './chat/chat.module';
 import { MailModule } from './mail/mail.module';
 import { TicketModule } from './ticket/ticket.module';
+import { TelephonyModule } from './telephony/telephony.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { TicketModule } from './ticket/ticket.module';
     ChatModule,
     MailModule,
     TicketModule,
+    TelephonyModule,
   ],
   controllers: [AppController],
 })

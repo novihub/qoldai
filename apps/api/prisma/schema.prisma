@@ -68,6 +68,7 @@ model User {
   operatorTickets   Ticket[]        @relation("OperatorTickets")
   ticketMessages    TicketMessage[]
   departments       Department[]    @relation("DepartmentOperators")
+  callLogs          CallLog[]
 
   @@map("users")
 }
@@ -183,6 +184,7 @@ model Ticket {
 
   messages        TicketMessage[]
   attachments     Attachment[]
+  callLogs        CallLog[]
 
   @@index([clientId])
   @@index([operatorId])
@@ -218,4 +220,73 @@ model Attachment {
   ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 
   @@map("attachments")
+}
+
+// ============ TELEPHONY (Kcell VPBX) ============
+
+enum CallDirection {
+  IN
+  OUT
+}
+
+enum CallStatus {
+  INCOMING     // Входящий, ожидает ответа
+  OUTGOING     // Исходящий, набор
+  ACCEPTED     // Принят
+  COMPLETED    // Завершён успешно
+  CANCELLED    // Отменён
+  MISSED       // Пропущен
+  BUSY         // Занято
+  NOT_AVAILABLE
+  TRANSFERRED  // Переведён
+}
+
+model CallLog {
+  id              String        @id @default(cuid())
+  callId          String        @unique // callid от Kcell VPBX
+  
+  phone           String        // телефон клиента
+  diversion       String?       // номер ВАТС
+  direction       CallDirection @default(IN)
+  status          CallStatus    @default(INCOMING)
+  
+  // Оператор
+  userId          String?       // ID пользователя ВАТС
+  ext             String?       // внутренний номер
+  groupRealName   String?       // название отдела
+  
+  // Время и длительность
+  startedAt       DateTime      @default(now())
+  answeredAt      DateTime?
+  endedAt         DateTime?
+  duration        Int           @default(0) // секунды
+  
+  // Запись и AI
+  recordingUrl    String?       // ссылка на запись от Kcell
+  transcription   String?       @db.Text
+  aiSummary       String?       @db.Text
+  aiSentiment     String?
+  
+  // Оценка качества
+  rating          Int?
+  
+  // Связь с тикетом
+  ticketId        String?
+  ticket          Ticket?       @relation(fields: [ticketId], references: [id])
+  
+  // Оператор в системе
+  operatorId      String?
+  operator        User?         @relation(fields: [operatorId], references: [id])
+  
+  // Для переведенных звонков
+  secondCallId    String?
+  
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([phone])
+  @@index([callId])
+  @@index([status])
+  @@index([operatorId])
+  @@map("call_logs")
 }

@@ -5,10 +5,10 @@ FROM base AS deps
 WORKDIR /app
 
 # copy web package files
-COPY apps/web/package.json apps/web/package-lock.json ./
+COPY apps/web/package.json ./
 
 # install external deps
-RUN npm ci --legacy-peer-deps
+RUN npm i
 
 # copy shared package
 COPY packages/shared ./packages/shared

@@ -8,10 +8,10 @@ WORKDIR /app
 RUN apt-get update -y && apt-get install -y openssl ca-certificates
 
 # Copy api package files
-COPY apps/api/package.json apps/api/package-lock.json ./
+COPY apps/api/package.json ./
 
 # Install external deps
-RUN npm ci
+RUN npm i
 
 # Copy shared package
 COPY packages/shared ./packages/shared

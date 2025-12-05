@@ -21,7 +21,7 @@ export class MailService {
   async sendVerificationCode(email: string, code: string): Promise<void> {
     if (!this.resendApiKey) {
       // Log to console for development
-      this.logger.log(`📧 Verification code for ${email}: ${code}`);
+      this.logger.log(`  Verification code for ${email}: ${code}`);
       return;
     }
 
@@ -57,7 +57,7 @@ export class MailService {
         throw new Error(error.message || 'Failed to send email');
       }
 
-      this.logger.log(`📧 Email sent to ${email}`);
+      this.logger.log(`  Email sent to ${email}`);
     } catch (error: any) {
       this.logger.error(`Failed to send email: ${error.message}`);
       throw error;
@@ -69,8 +69,8 @@ export class MailService {
    */
   async sendEmail(to: string, subject: string, html: string): Promise<void> {
     if (!this.resendApiKey) {
-      this.logger.log(`📧 [Email] To: ${to}, Subject: ${subject}`);
-      this.logger.log(`📧 HTML preview: ${html.substring(0, 200)}...`);
+      this.logger.log(`  [Email] To: ${to}, Subject: ${subject}`);
+      this.logger.log(`  HTML preview: ${html.substring(0, 200)}...`);
       return;
     }
 
@@ -94,7 +94,7 @@ export class MailService {
         throw new Error(error.message || 'Failed to send email');
       }
 
-      this.logger.log(`📧 Email sent to ${to}: ${subject}`);
+      this.logger.log(`  Email sent to ${to}: ${subject}`);
     } catch (error: any) {
       this.logger.error(`Failed to send email: ${error.message}`);
       throw error;
@@ -137,8 +137,8 @@ export class MailService {
     `;
 
     if (!this.resendApiKey) {
-      this.logger.log(`📧 [Ticket Reply] To: ${to}, Subject: ${replySubject}`);
-      this.logger.log(`📧 Message: ${message}`);
+      this.logger.log(`  [Ticket Reply] To: ${to}, Subject: ${replySubject}`);
+      this.logger.log(`  Message: ${message}`);
       return;
     }
 
@@ -162,7 +162,7 @@ export class MailService {
         throw new Error(error.message || 'Failed to send ticket reply');
       }
 
-      this.logger.log(`📧 Ticket reply sent to ${to} for ticket ${ticketId}`);
+      this.logger.log(`  Ticket reply sent to ${to} for ticket ${ticketId}`);
     } catch (error: any) {
       this.logger.error(`Failed to send ticket reply: ${error.message}`);
       throw error;
@@ -215,7 +215,7 @@ export class MailService {
     `;
 
     if (!this.resendApiKey) {
-      this.logger.log(`📧 [Ticket Notification] To: ${to}, Ticket: ${ticketId}, Status: ${status}`);
+      this.logger.log(`  [Ticket Notification] To: ${to}, Ticket: ${ticketId}, Status: ${status}`);
       return;
     }
 
@@ -239,7 +239,7 @@ export class MailService {
         throw new Error(error.message || 'Failed to send notification');
       }
 
-      this.logger.log(`📧 Notification sent to ${to} for ticket ${ticketId}`);
+      this.logger.log(`  Notification sent to ${to} for ticket ${ticketId}`);
     } catch (error: any) {
       this.logger.error(`Failed to send notification: ${error.message}`);
     }

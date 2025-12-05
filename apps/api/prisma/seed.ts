@@ -4,7 +4,7 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('  Seeding database...');
 
   // Очистка существующих данных (в правильном порядке)
   await prisma.ticketMessage.deleteMany();
@@ -17,7 +17,7 @@ async function main() {
   await prisma.account.deleteMany();
   await prisma.user.deleteMany();
 
-  console.log('✅ Cleared existing data');
+  console.log('  Cleared existing data');
 
   // Хэширование паролей
   const passwordHash = await bcrypt.hash('password123', 10);
@@ -84,7 +84,7 @@ async function main() {
     },
   });
 
-  console.log('✅ Created users');
+  console.log('  Created users');
 
   // Создание департаментов
   const techSupport = await prisma.department.create({
@@ -115,7 +115,7 @@ async function main() {
     },
   });
 
-  console.log('✅ Created departments');
+  console.log('  Created departments');
 
   // Создание тикетов
   const ticket1 = await prisma.ticket.create({
@@ -291,7 +291,7 @@ async function main() {
     },
   });
 
-  console.log('✅ Created tickets with messages');
+  console.log('  Created tickets with messages');
 
   // Добавляем больше тикетов для красивых графиков
   const additionalTickets = [
@@ -349,25 +349,25 @@ async function main() {
     });
   }
 
-  console.log(`✅ Created ${additionalTickets.length} additional tickets for charts`);
+  console.log(`  Created ${additionalTickets.length} additional tickets for charts`);
 
   // Статистика
-  console.log('\n📊 Seed Summary:');
+  console.log('\n  Seed Summary:');
   console.log(`   Users: 6 (1 AI bot, 1 admin, 2 operators, 2 clients)`);
   console.log(`   Departments: 4`);
   console.log(`   Tickets: ${5 + additionalTickets.length}`);
-  console.log('\n🔐 Test Accounts (password: password123):');
+  console.log('\n  Test Accounts (password: password123):');
   console.log('   Admin:    admin@qoldai.kz');
   console.log('   Operator: operator@qoldai.kz');
   console.log('   Operator: support@qoldai.kz');
   console.log('   Client:   client@example.com');
   console.log('   Client:   user@example.com');
-  console.log('\n✨ Seeding completed!');
+  console.log('\n  Seeding completed!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed error:', e);
+    console.error('  Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {

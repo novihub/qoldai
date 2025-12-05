@@ -29,7 +29,7 @@ function CopyButton({ text }: { text: string }) {
       onClick={handleCopy}
       className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 text-gray-600 rounded transition-colors"
     >
-      {copied ? '✓ Скопировано' : 'Копировать'}
+      {copied ? '  Скопировано' : 'Копировать'}
     </button>
   );
 }

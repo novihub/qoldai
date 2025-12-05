@@ -46,9 +46,9 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
         tlsOptions: { rejectUnauthorized: false },
       };
       this.isConfigured = true;
-      this.logger.log(`📧 Email channel configured for ${imapUser}@${imapHost}`);
+      this.logger.log(`  Email channel configured for ${imapUser}@${imapHost}`);
     } else {
-      this.logger.warn('📧 Email channel not configured. Set IMAP_HOST, IMAP_USER, IMAP_PASSWORD env vars.');
+      this.logger.warn('  Email channel not configured. Set IMAP_HOST, IMAP_USER, IMAP_PASSWORD env vars.');
     }
   }
 
@@ -60,7 +60,7 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
       
       // Initial check
       setTimeout(() => this.checkNewEmails(), 5000);
-      this.logger.log(`📧 Email polling started (every ${pollIntervalMs / 1000}s)`);
+      this.logger.log(`  Email polling started (every ${pollIntervalMs / 1000}s)`);
     }
   }
 
@@ -90,7 +90,7 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
 
     try {
       const emails = await this.fetchUnreadEmails();
-      this.logger.log(`📧 Found ${emails.length} new emails`);
+      this.logger.log(`  Found ${emails.length} new emails`);
 
       for (const email of emails) {
         await this.processEmail(email);
@@ -227,7 +227,7 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
    * Process an incoming email - create ticket or add message
    */
   private async processEmail(email: EmailMessage): Promise<void> {
-    this.logger.log(`📧 Processing email from ${email.from}: ${email.subject}`);
+    this.logger.log(`  Processing email from ${email.from}: ${email.subject}`);
 
     try {
       // Find or create user by email
@@ -245,7 +245,7 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
             emailVerified: null, // Email clients are unverified by default
           },
         });
-        this.logger.log(`📧 Created new user for email: ${email.from}`);
+        this.logger.log(`  Created new user for email: ${email.from}`);
       }
 
       // Check if this is a reply to existing ticket (by subject pattern)
@@ -288,7 +288,7 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    this.logger.log(`📧 Created ticket ${ticket.id} from email`);
+    this.logger.log(`  Created ticket ${ticket.id} from email`);
 
     // Send auto-reply confirmation
     await this.sendTicketConfirmation(email.from, ticket.id, email.subject);
@@ -334,7 +334,7 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
-    this.logger.log(`📧 Added message to ticket ${ticketId}`);
+    this.logger.log(`  Added message to ticket ${ticketId}`);
   }
 
   /**
@@ -346,7 +346,7 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
 
     await this.mailService.sendEmail(to, subject, `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2>🎫 Ваше обращение принято!</h2>
+        <h2>  Ваше обращение принято!</h2>
         <p>Мы получили ваше обращение и уже работаем над ним.</p>
         
         <div style="background-color: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 16px; margin: 20px 0;">
@@ -370,7 +370,7 @@ export class EmailChannelService implements OnModuleInit, OnModuleDestroy {
       </div>
     `);
 
-    this.logger.log(`📧 Sent confirmation email for ticket ${ticketId}`);
+    this.logger.log(`  Sent confirmation email for ticket ${ticketId}`);
   }
 
   /**
@@ -437,7 +437,7 @@ Return JSON with:
         },
       });
 
-      this.logger.log(`📧 AI classified ticket ${ticketId}: ${result.category}, ${result.priority}`);
+      this.logger.log(`  AI classified ticket ${ticketId}: ${result.category}, ${result.priority}`);
     } catch (error: any) {
       this.logger.error(`AI classification error: ${error.message}`);
     }
@@ -489,7 +489,7 @@ Return JSON with:
           emailVerified: null,
         },
       });
-      this.logger.log(`📧 [Test] Created new user: ${from}`);
+      this.logger.log(`  [Test] Created new user: ${from}`);
     }
 
     // Check if reply to existing ticket
@@ -510,7 +510,7 @@ Return JSON with:
             isAiGenerated: false,
           },
         });
-        this.logger.log(`📧 [Test] Added message to ticket ${ticketId}`);
+        this.logger.log(`  [Test] Added message to ticket ${ticketId}`);
         return { ticketId, userId: user.id };
       }
     }
@@ -529,7 +529,7 @@ Return JSON with:
       },
     });
 
-    this.logger.log(`📧 [Test] Created ticket ${ticket.id} from simulated email`);
+    this.logger.log(`  [Test] Created ticket ${ticket.id} from simulated email`);
 
     // Try AI classification
     try {

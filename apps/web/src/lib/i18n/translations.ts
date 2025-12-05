@@ -105,9 +105,9 @@ export const translations = {
 
     // Sentiments
     sentiment: {
-      positive: '😊 Позитивное',
-      neutral: '😐 Нейтральное',
-      negative: '😟 Негативное',
+      positive: '  Позитивное',
+      neutral: '  Нейтральное',
+      negative: '  Негативное',
     },
 
     // Operator Panel
@@ -289,9 +289,9 @@ export const translations = {
 
     // Sentiments
     sentiment: {
-      positive: '😊 Жағымды',
-      neutral: '😐 Бейтарап',
-      negative: '😟 Жағымсыз',
+      positive: '  Жағымды',
+      neutral: '  Бейтарап',
+      negative: '  Жағымсыз',
     },
 
     // Operator Panel
@@ -473,9 +473,9 @@ export const translations = {
 
     // Sentiments
     sentiment: {
-      positive: '😊 Positive',
-      neutral: '😐 Neutral',
-      negative: '😟 Negative',
+      positive: '  Positive',
+      neutral: '  Neutral',
+      negative: '  Negative',
     },
 
     // Operator Panel
